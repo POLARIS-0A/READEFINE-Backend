@@ -1,16 +1,14 @@
-WORK NEED TO BE DONE:
-LEARNING PAGE NEEDS:
--voiced lessons
+LESSONS ARE VOICE-ACTED BY BOTS:
+-While reading, the sentence being read lights up.
+-It can be paused and played.
+-It can skip sentences or be played back by tapping a specific sentence to be read again.
 
-TESTING PAGE NEEDS:
--integrate AI as checker
+TEST CHECKER AFTER EACH LESSON
+-Integrate GEMINI to become a checker for the answers
 
-DATABASE ON 
--ACCOUNT SIGN UP AND LOG IN
--ACCOUNT USER PROGRESSION
+ACCOUNT REGISTRATION AND LOGIN
+-Configure Supabase.
 
-ASSIGN
--Judelyn Buyagon
--Gabriel Briones
--Fritz
--Ric
+ACCOUNT PROGRESSION FOR EACH USER
+-it fills up the bar in homepage
+-it highlights which lessons are finished/ongoing.
