@@ -1,11 +1,12 @@
 import { Router } from 'express';
 import healthRoutes from './health.routes.js';
+import chapterRoutes from './chapter.routes.js';
 
 const router = Router();
 
 router.use('/health', healthRoutes);
-// TODO: router.use('/chapters', chapterRoutes);   // learning page
-// TODO: router.use('/tests', testRoutes);         // testing page
-// TODO: router.use('/progress', progressRoutes);  // user progression
+router.use('/chapters', chapterRoutes);
+// TO DO: router.use('/tests', testRoutes);    
+// TO DO: router.use('/progress', progressRoutes);  
 
 export default router;
