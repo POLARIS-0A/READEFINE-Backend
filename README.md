@@ -16,6 +16,14 @@ Requires Node 20+. Optional overrides: `PORT` (default `3000`) and `CORS_ORIGIN`
 `SUPABASE_SECRET_KEY`, and `GEMINI_API_KEY` in `.env` using `.env.sample` as a template.
 Keep the secret key in the backend only.
 
+## Deploying (e.g. Render)
+
+The `.env` file is gitignored and is **not** deployed. Set the environment variables in your
+hosting provider's dashboard instead (Render: **Environment** → **Add Environment Variable**):
+`PORT` (Render sets this automatically), `CORS_ORIGIN`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+`SUPABASE_SECRET_KEY`, `GEMINI_API_KEY`, and optionally `GEMINI_MODEL`. The `start` script runs
+`node src/server.js` without `--env-file`, so it relies on those injected variables.
+
 Serve `READIFINE-Frontend` from a local web server (for example, VS Code Live Server on port
 `5500`) rather than opening the HTML files as `file://` URLs. The frontend calls
 `http://localhost:3000/api` by default; set `window.READIFINE_API_URL` before loading `api.js`
