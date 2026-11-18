@@ -19,7 +19,11 @@ router.post("/check", async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error("Gemini error:", err.status, err.message);
-    res.status(500).json({ error: "AI check failed" });
+    res.status(err.status === 429 || err.status === 503 ? 502 : 500).json({
+      error: err.status === 429 || err.status === 503
+        ? "AI checker is temporarily unavailable"
+        : "AI check failed",
+    });
   }
 });
 

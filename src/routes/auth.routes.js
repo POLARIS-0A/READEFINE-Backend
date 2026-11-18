@@ -20,7 +20,11 @@ router.post('/signup', async (req, res) => {
   });
 
   if (error) return res.status(400).json({ error: error.message });
-  res.status(201).json({ user: data.user });
+  res.status(201).json({
+    user: data.user,
+    accessToken: data.session?.access_token ?? null,
+    requiresEmailConfirmation: !data.session,
+  });
 });
 
 router.post('/login', async (req, res) => {
