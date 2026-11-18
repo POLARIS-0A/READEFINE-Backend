@@ -1,7 +1,21 @@
 import { Router } from "express";
+import { readFileSync } from "node:fs";
 import { checkAnswer } from "../services/gemini.service.js";
 
 const router = Router();
+const answerSheets = JSON.parse(
+  readFileSync(new URL("../data/exam-answer-sheets.json", import.meta.url), "utf8")
+);
+
+router.get("/answer-sheets/:lessonId", (req, res) => {
+  const answerSheet = answerSheets[req.params.lessonId];
+
+  if (!answerSheet) {
+    return res.status(404).json({ error: "Answer sheet not found" });
+  }
+
+  res.json(answerSheet);
+});
 
 router.post("/check", async (req, res) => {
   const { question, correctAnswer, userAnswer } = req.body;
@@ -21,6 +35,78 @@ router.post("/check", async (req, res) => {
     console.error("Gemini error:", err.status, err.message);
     res.status(500).json({ error: "AI check failed" });
   }
+});
+
+router.post("/submit", async (req, res) => {
+  const {
+    lessonId,
+    identificationAnswers,
+    multipleChoiceAnswers,
+    essayQuestion,
+    essayAnswer,
+  } = req.body;
+
+  const answerSheet = answerSheets[String(lessonId)];
+  if (!answerSheet) {
+    return res.status(404).json({ error: "Exam answer sheet not found" });
+  }
+  if (!Array.isArray(identificationAnswers) || !Array.isArray(multipleChoiceAnswers) || !essayAnswer) {
+    return res.status(400).json({ error: "Complete exam answers are required" });
+  }
+
+  const normalize = (value) => String(value)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ");
+
+  const identificationCorrect = answerSheet.identification.map((expected, index) => {
+    const answer = normalize(identificationAnswers[index]);
+    const accepted = String(expected)
+      .split(/\s*(?:\/|\bor\b)\s*/i)
+      .some((option) => {
+        const expectedAnswer = normalize(option);
+        return answer === expectedAnswer ||
+          (answer.length >= 4 && expectedAnswer.includes(answer));
+      });
+    return accepted;
+  });
+  const multipleChoiceCorrect = answerSheet.multipleChoice.map((expected, index) => {
+    const answer = normalize(multipleChoiceAnswers[index]);
+    return String(expected)
+      .split(/\s*(?:\/|\bor\b)\s*/i)
+      .some((option) => normalize(option) === answer);
+  });
+
+  let essayResult;
+  try {
+    essayResult = await checkAnswer({
+      question: essayQuestion || "Read the student's essay response and judge it against the exam question.",
+      correctAnswer: "",
+      userAnswer: String(essayAnswer).slice(0, 2000),
+    });
+  } catch (err) {
+    console.error("Essay Gemini error:", err.status, err.message);
+    essayResult = {
+      correct: false,
+      feedback: "The AI checker could not review the essay, so it was not awarded essay points.",
+    };
+  }
+
+  const identificationScore = identificationCorrect.filter(Boolean).length;
+  const multipleChoiceScore = multipleChoiceCorrect.filter(Boolean).length;
+  const essayScore = essayResult.correct ? 5 : 0;
+  const score = identificationScore + multipleChoiceScore + essayScore;
+  const total = answerSheet.identification.length + answerSheet.multipleChoice.length + 5;
+
+  res.json({
+    passed: score >= Math.ceil(total * 0.6),
+    score,
+    total,
+    identificationCorrect,
+    multipleChoiceCorrect,
+    essay: essayResult,
+  });
 });
 
 export default router;
