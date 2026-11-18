@@ -1,7 +1,7 @@
 # READIFY Backend
 
-Express (JavaScript, ES modules) API for READIFY. No database is connected yet; see `schema.md`
-for the planned Supabase schema.
+Express (JavaScript, ES modules) API for READEFINE. Supabase provides authentication,
+published chapters, and learner progress; Gemini powers the answer checker.
 
 ## Setup
 
@@ -11,7 +11,15 @@ npm run dev    # http://localhost:3000/api/health
 ```
 
 Requires Node 20+. Optional overrides: `PORT` (default `3000`) and `CORS_ORIGIN`
-(default `http://localhost:5173`, comma-separated for multiple).
+(comma-separated frontend origins; defaults include `http://localhost:5500` and
+`http://localhost:5173`). Configure `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+`SUPABASE_SECRET_KEY`, and `GEMINI_API_KEY` in `.env` using `.env.sample` as a template.
+Keep the secret key in the backend only.
+
+Serve `READIFINE-Frontend` from a local web server (for example, VS Code Live Server on port
+`5500`) rather than opening the HTML files as `file://` URLs. The frontend calls
+`http://localhost:3000/api` by default; set `window.READIFINE_API_URL` before loading `api.js`
+to use a different backend URL.
 
 ## Structure
 
@@ -43,3 +51,8 @@ src/
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/health` | Health check |
+| POST | `/api/auth/signup` | Create an account |
+| POST | `/api/auth/login` | Sign in |
+| GET | `/api/chapters` | List published chapters |
+| GET/POST | `/api/progress` | Read or save learner progress (Bearer token required) |
+| POST | `/api/exam/check` | Check an answer with Gemini |
