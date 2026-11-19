@@ -18,18 +18,32 @@ async function requireUser(req, res, next) {
 // Save or update progress for one lesson
 router.post('/', requireUser, async (req, res) => {
   const { lessonId, completed, score } = req.body;
-  if (!lessonId) return res.status(400).json({ error: 'lessonId is required' });
+  const lessonNumber = Number(lessonId);
+  if (!Number.isInteger(lessonNumber) || lessonNumber < 1 || lessonNumber > 40) {
+    return res.status(400).json({ error: 'lessonId must be between 1 and 40' });
+  }
+  if (typeof completed !== 'boolean') {
+    return res.status(400).json({ error: 'completed must be a boolean' });
+  }
+  if (score !== undefined && score !== null &&
+      (typeof score !== 'number' || !Number.isFinite(score) || score < 0)) {
+    return res.status(400).json({ error: 'score must be a non-negative number' });
+  }
 
-  const { error } = await admin.from('progress').upsert(
-    {
-      user_id: req.user.id,
-      lesson_id: String(lessonId),
-      completed: !!completed,
-      score: score ?? null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id,lesson_id' }
-  );
+  const progressRecord = {
+    user_id: req.user.id,
+    lesson_id: String(lessonNumber),
+    completed,
+    updated_at: new Date().toISOString(),
+  };
+  if (score !== undefined && score !== null) progressRecord.score = score;
+
+  const { error } = await admin
+    .from('progress')
+    .upsert(progressRecord, {
+      onConflict: 'user_id,lesson_id',
+      defaultToNull: false,
+    });
 
   if (error) return res.status(400).json({ error: error.message });
   res.json({ ok: true });
