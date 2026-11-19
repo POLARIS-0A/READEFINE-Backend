@@ -1,15 +1,27 @@
 import { Router } from 'express';
+import { createClient } from '@supabase/supabase-js';
 import { supabase as admin } from '../config/supabase.js';
+import { env } from '../config/env.js';
 
 const router = Router();
+const authClient = createClient(env.supabaseUrl, env.supabaseAnonKey);
 
-// Check the token and find out who the user is
+// Verify the user's access token with the public project key.
 async function requireUser(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Not logged in' });
 
-  const { data, error } = await admin.auth.getUser(token);
-  if (error || !data.user) return res.status(401).json({ error: 'Invalid token' });
+  const { data, error } = await authClient.auth.getUser(token);
+  if (error) {
+    if (error.status === 401 || error.status === 403) {
+      return res.status(401).json({ error: 'Session is invalid or expired. Please log in again.' });
+    }
+    console.error('Could not verify progress access token:', error.message);
+    return res.status(502).json({ error: 'Could not verify your session. Please try again.' });
+  }
+  if (!data.user) {
+    return res.status(401).json({ error: 'Session is invalid or expired. Please log in again.' });
+  }
 
   req.user = data.user;
   next();
