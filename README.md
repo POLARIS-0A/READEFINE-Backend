@@ -7,7 +7,7 @@ published chapters, and learner progress; Gemini powers the answer checker.
 
 ```bash
 npm install
-npm run dev    # http://localhost:3000/api/health
+npm run dev    # https://readefine-backend-pssem5qv5-temmies-projects-f070e36f.vercel.app//api/health
 ```
 
 Requires Node 20+. Optional overrides: `PORT` (default `3000`) and `CORS_ORIGIN`
@@ -26,7 +26,7 @@ hosting provider's dashboard instead (Render: **Environment** → **Add Environm
 
 Serve `READIFINE-Frontend` from a local web server (for example, VS Code Live Server on port
 `5500`) rather than opening the HTML files as `file://` URLs. The frontend calls
-`http://localhost:3000/api` by default; set `window.READIFINE_API_URL` before loading `api.js`
+`https://readefine-backend-pssem5qv5-temmies-projects-f070e36f.vercel.app//api` by default; set `window.READIFINE_API_URL` before loading `api.js`
 to use a different backend URL.
 
 ## Structure
