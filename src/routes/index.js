@@ -4,6 +4,7 @@ import chapterRoutes from './chapters.routes.js';
 import authRoutes from './auth.routes.js';
 import progressRoutes from './progress.routes.js';
 import testRoutes from './tests.routes.js';
+import examRoutes from './exam.routes.js';
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.use('/chapters', chapterRoutes);
 router.use('/auth', authRoutes);
 router.use('/progress', progressRoutes);
 router.use('/tests', testRoutes);
+router.use('/exam', examRoutes);
 
 export default router;

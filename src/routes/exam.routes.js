@@ -7,16 +7,6 @@ const answerSheets = JSON.parse(
   readFileSync(new URL("../data/exam-answer-sheets.json", import.meta.url), "utf8")
 );
 
-router.get("/answer-sheets/:lessonId", (req, res) => {
-  const answerSheet = answerSheets[req.params.lessonId];
-
-  if (!answerSheet) {
-    return res.status(404).json({ error: "Answer sheet not found" });
-  }
-
-  res.json(answerSheet);
-});
-
 router.post("/check", async (req, res) => {
   const { question, correctAnswer, userAnswer } = req.body;
 
@@ -33,7 +23,11 @@ router.post("/check", async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error("Gemini error:", err.status, err.message);
-    res.status(500).json({ error: "AI check failed" });
+    res.status(err.status === 429 || err.status === 503 ? 502 : 500).json({
+      error: err.status === 429 || err.status === 503
+        ? "AI checker is temporarily unavailable"
+        : "AI check failed",
+    });
   }
 });
 
