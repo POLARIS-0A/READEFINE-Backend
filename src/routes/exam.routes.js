@@ -113,7 +113,12 @@ router.post("/submit", requireUser, async (req, res) => {
 
   if (saveError) {
     console.error("Could not save exam attempt:", saveError.message);
-    return res.status(500).json({ error: "The exam was graded but its answers could not be saved." });
+    const migrationMissing = ["PGRST202", "PGRST205", "42P01"].includes(saveError.code);
+    return res.status(500).json({
+      error: migrationMissing
+        ? "Exam answer storage is not set up. Run the latest sql/progress.sql in Supabase."
+        : "The exam was graded but its answers could not be saved.",
+    });
   }
 
   res.json({
