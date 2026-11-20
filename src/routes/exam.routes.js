@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { readFileSync } from "node:fs";
 import { checkAnswer } from "../services/gemini.service.js";
+import { supabase as admin } from "../config/supabase.js";
+import { requireUser } from "../middlewares/require-user.middleware.js";
 
 const router = Router();
 const answerSheets = JSON.parse(
@@ -31,7 +33,7 @@ router.post("/check", async (req, res) => {
   }
 });
 
-router.post("/submit", async (req, res) => {
+router.post("/submit", requireUser, async (req, res) => {
   const {
     lessonId,
     identificationAnswers,
@@ -44,7 +46,12 @@ router.post("/submit", async (req, res) => {
   if (!answerSheet) {
     return res.status(404).json({ error: "Exam answer sheet not found" });
   }
-  if (!Array.isArray(identificationAnswers) || !Array.isArray(multipleChoiceAnswers) || !essayAnswer) {
+  if (!Array.isArray(identificationAnswers) ||
+      identificationAnswers.length !== answerSheet.identification.length ||
+      !Array.isArray(multipleChoiceAnswers) ||
+      multipleChoiceAnswers.length !== answerSheet.multipleChoice.length ||
+      typeof essayAnswer !== "string" ||
+      !essayAnswer.trim()) {
     return res.status(400).json({ error: "Complete exam answers are required" });
   }
 
@@ -92,9 +99,27 @@ router.post("/submit", async (req, res) => {
   const essayScore = essayResult.correct ? 5 : 0;
   const score = identificationScore + multipleChoiceScore + essayScore;
   const total = answerSheet.identification.length + answerSheet.multipleChoice.length + 5;
+  const passed = score === total;
+  const { error: saveError } = await admin.rpc("record_exam_attempt", {
+    p_user_id: req.user.id,
+    p_lesson_id: String(lessonId),
+    p_identification_answers: identificationAnswers,
+    p_multiple_choice_answers: multipleChoiceAnswers,
+    p_essay_answer: String(essayAnswer).slice(0, 2000),
+    p_score: score,
+    p_total: total,
+    p_passed: passed,
+  });
+
+  if (saveError) {
+    console.error("Could not save exam attempt:", saveError.message);
+    return res.status(500).json({ error: "The exam was graded but its answers could not be saved." });
+  }
 
   res.json({
-    passed: score === total,
+    passed,
+    answersSaved: true,
+    progressSaved: passed,
     score,
     total,
     identificationCorrect,
