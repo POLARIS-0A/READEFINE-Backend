@@ -94,7 +94,7 @@ router.post("/submit", async (req, res) => {
   const total = answerSheet.identification.length + answerSheet.multipleChoice.length + 5;
 
   res.json({
-    passed: score >= Math.ceil(total * 0.6),
+    passed: score === total,
     score,
     total,
     identificationCorrect,
