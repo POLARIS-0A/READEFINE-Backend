@@ -113,7 +113,12 @@ router.post("/submit", requireUser, async (req, res) => {
 
   if (saveError) {
     console.error("Could not save exam attempt:", saveError.message);
-    return res.status(500).json({ error: "The exam was graded but its answers could not be saved." });
+    const migrationMissing = ["PGRST202", "PGRST205", "42P01"].includes(saveError.code);
+    return res.status(500).json({
+      error: migrationMissing
+        ? "Exam answer storage is not set up. Run the latest sql/progress.sql in Supabase."
+        : "The exam was graded but its answers could not be saved.",
+    });
   }
 
   res.json({
@@ -126,6 +131,45 @@ router.post("/submit", requireUser, async (req, res) => {
     multipleChoiceCorrect,
     essay: essayResult,
   });
+});
+
+router.get("/attempt/:lessonId", requireUser, async (req, res) => {
+  const lessonNumber = Number(req.params.lessonId);
+  if (!Number.isInteger(lessonNumber) || lessonNumber < 1 || lessonNumber > 40) {
+    return res.status(400).json({ error: "lessonId must be between 1 and 40" });
+  }
+
+  const [{ data: attempt, error: attemptError }, { data: passedAttempt, error: passedError }] = await Promise.all([
+    admin
+      .from("exam_attempts")
+      .select("identification_answers, multiple_choice_answers, essay_answer, score, total, passed, created_at")
+      .eq("user_id", req.user.id)
+      .eq("lesson_id", String(lessonNumber))
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    admin
+      .from("exam_attempts")
+      .select("id")
+      .eq("user_id", req.user.id)
+      .eq("lesson_id", String(lessonNumber))
+      .eq("passed", true)
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  if (attemptError || passedError) {
+    const error = attemptError || passedError;
+    console.error("Could not load exam attempt:", error.message);
+    const migrationMissing = ["PGRST202", "PGRST205", "42P01"].includes(error.code);
+    return res.status(500).json({
+      error: migrationMissing
+        ? "Exam answer storage is not set up. Run the latest sql/progress.sql in Supabase."
+        : "Could not load your saved exam answers.",
+    });
+  }
+
+  res.json({ attempt, lessonCompleted: Boolean(passedAttempt) });
 });
 
 export default router;
