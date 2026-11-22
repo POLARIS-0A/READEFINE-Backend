@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/env.js';
+import { requireUser } from '../middlewares/require-user.middleware.js';
 
 const router = Router();
 
@@ -45,5 +46,27 @@ router.post('/login', async (req, res) => {
     user: data.user,
     accessToken: data.session.access_token,
   });
+});
+
+router.patch('/profile', requireUser, async (req, res) => {
+  const fullName = typeof req.body.fullName === 'string' ? req.body.fullName.trim() : '';
+  const email = typeof req.body.email === 'string' ? req.body.email.trim() : '';
+  if (!fullName || !email) {
+    return res.status(400).json({ error: 'Full name and email are required' });
+  }
+
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  const client = createClient(env.supabaseUrl, env.supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+
+  const { data, error } = await client.auth.updateUser({
+    email,
+    data: { full_name: fullName },
+  });
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ user: data.user });
 });
 export default router;
